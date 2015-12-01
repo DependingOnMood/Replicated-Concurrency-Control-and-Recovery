@@ -12,11 +12,13 @@ public class Database {
     	int value;
     	boolean isReadyForRead;
     	List<Lock> lockList;
+    	List<Lock> waitList;
     	public Variable (String name, int value) {
     		this.name = name;
     		this.value = value;
     		isReadyForRead = true;
     		lockList = new ArrayList<Lock>();
+    		waitList = new ArrayList<Lock>();
     	}
     	public void changeValue(int value) {
     		this.value = value;
@@ -34,9 +36,16 @@ public class Database {
     		return isReadyForRead;
     	}
     	public boolean hasWriteLock() {
-    		for (Lock lock: lockList) {
-    			if (lock.isActive() && lock.type.equals("write")) {
+    		for (int i = 0; i < lockList.size(); ) {
+    			Lock lock = lockList.get(i);
+    			if (!lock.isActive()) {
+    				lockList.remove(i);
+    			}
+    			else if (lock.type.equals("write")) {
     				return true;
+    			}
+    			else {
+    				i++;
     			}
     		}
     		return false;
@@ -52,24 +61,42 @@ public class Database {
     	public void placeLock(Lock lock) {
     		lockList.add(lock);
     	}
-    	public Lock getLock() {
-    		return lockList.get(0);
+    	public List<Lock> getLockList() {
+    		return lockList;
     	}
-    	public boolean canPlaceWriteLock(Transaction writeT, int index) {
-    		for (Lock lock: lockList) {
-    			if (lock.isActive() && lock.type.equals("Read") && lock.transaction().getTime() > writeT.getTime()) {
-    				continue;
+    	public boolean canWait(Transaction t) {
+    		int i = waitList.size() - 1;
+    		while (waitList.size() > 0 && !waitList.get(i).isActive()) {
+    			waitList.remove(i);
+    			i--;
+    		}
+    		return waitList.isEmpty() || waitList.get(waitList.size() - 1).transaction().getTime() > t.getTime();
+    	}
+    	public void wait(Lock lock) {
+    		waitList.add(lock);
+    	}
+    	public void update() {
+    		for (int i = 0; i < lockList.size(); ) {
+    			Lock lock = lockList.get(i);
+    			if (!lock.isActive()) {
+    				lockList.remove(i);
     			}
     			else {
-    				return false;
+    				i++;
+    			} 
+    		}
+    		if (lockList.size() > 0) {
+    			return;
+    		}
+    		while (waitList.size() > 0) {
+    			if (!waitList.get(0).isActive()) {
+    				waitList.remove(0);
+    			}
+    			else {
+    				lockList.add(waitList.get(0));
+    				break;
     			}
     		}
-    		Lock lock = new Lock(writeT, this, sites[index], "Write", 0, true);
-			this.placeLock(lock);
-			sites[index].placeLock(lock);
-			writeT.placeLock(lock);
-    		lockList.add(lock);
-    		return true;
     	}
     }
     
@@ -94,9 +121,7 @@ public class Database {
     		isFailing = true;
     		for (Lock lock: lockTable) {
     			lock.changeActive(false);
-    			if(transactionList.containsKey(lock.transaction().getName())) {
-    				abort(transactionList.get(lock.transaction().getName()));
-    			}
+    			abort(transactionList.get(lock.transaction().getName()));
     		}
     		lockTable.clear();
     	}
@@ -151,13 +176,13 @@ public class Database {
     	//the locks the transaction is currently holding
     	List<Lock> lockTable;
     	//the locks which other transaction wants to get
-    	List<Lock> waitList;
+    	//List<Lock> waitList;
     	public Transaction(String name, int time, boolean b) {
     		this.name = name;
     		this.isReadOnly = b;
     		this.time = time;
     		lockTable = new ArrayList<Lock>();
-    		waitList = new ArrayList<Lock>();
+    		//waitList = new ArrayList<Lock>();
     	}
     	public String getName() {
     		return name;
@@ -168,29 +193,31 @@ public class Database {
     	public int getTime() {
     		return time;
     	}
-    	public void addWait(Lock lock) {
-    		waitList.add(lock);
-    	}
+//    	public void addWait(Lock lock) {
+//    		waitList.add(lock);
+//    	}
     	public void realizeLocks() {
     		for (Lock lock: lockTable) {
     			if (lock.isActive() && lock.type().equals("Write")) {
-    				lock.getVariable().changeValue(lock.value);
+    				lock.getVariable().changeValue(lock.getValue());
     				lock.getVariable().changeReadReady(true);
+//    				System.out.println(lock.getVariable().getName() + " " + lock.getValue());
     			}
     		}
     	}
     	public void nullifyLocks() {
     		for (Lock lock: lockTable) {
     			lock.changeActive(false);
+    			lock.getVariable().update();
     		}
     	}
-    	public void realizeWaits() {
-    		for (Lock lock: waitList) {
-    			if (transactionList.containsKey(lock.transaction().getName())) {
-    				lock.changeActive(true);
-    			}
-    		}
-    	}
+//    	public void realizeWaits() {
+//    		for (Lock lock: waitList) {
+//    			if (transactionList.containsKey(lock.transaction().getName())) {
+//    				lock.changeActive(true);
+//    			}
+//    		}
+//    	}
     }
     
     public static class Lock {
@@ -294,7 +321,6 @@ public class Database {
     	}
     	else {
     		int i = 0;
-    		Lock canWait = null;
     		for (; i < sites.length; i++) {
     			if (!sites[i].isFailing && sites[i].containsVariable(vName)) {
     				Variable v = sites[i].getVariable(vName);
@@ -308,20 +334,22 @@ public class Database {
     					break;
     				}
     				else if (v.isReadyForRead()) {
-    					Lock currentLock = v.getLock();
-    					if (currentLock.transaction().getTime() > t.getTime()) {
-    						canWait = currentLock;
+    					List<Lock> lockList = v.getLockList();
+    					if (lockList.get(0).transaction().getTime() > t.getTime() && v.canWait(t)) {
+    						Lock lock = new Lock(t, v, sites[i], "Read", 0, true);
+    						v.wait(lock);
+    						sites[i].placeLock(lock);
+    						t.placeLock(lock);
     					}
+    					else {
+    						abort(t);
+    					}
+    					break;
     				} 
     			}
     		}
     		if (i == sites.length) {
-    			if (canWait == null) {
-    				abort(t);
-    			}
-    			else {
-    				canWait.transaction().addWait(new Lock(t, canWait.getVariable(), canWait.getSite(), "Read", 0, false));
-    			}
+    			abort(t);
     		}
     	}
     }
@@ -344,10 +372,22 @@ public class Database {
     					shouldAbort = false;
     				}
     				else {
-    					if (!v.canPlaceWriteLock(t, i)){
+    					List<Lock> lockList = v.getLockList();
+    					for (Lock lock: lockList) {
+    						if (lock.isActive() && lock.transaction().getTime() < t.getTime()) {
+    							abort(t);
+    							break;
+    						}
+    					}
+    					if (!v.canWait(t)) {
     						abort(t);
     						break;
     					}
+    					Lock lock = new Lock(t, v, sites[i], "Write", value, true);
+						v.wait(lock);
+						sites[i].placeLock(lock);
+						t.placeLock(lock);
+						shouldAbort = false;
     				} 
     			}
     		}
@@ -357,15 +397,19 @@ public class Database {
     }
     
     public static void abort(Transaction t) {
-    	end(t, false);
+//    	System.out.println(t.getName() + " abort");
+    		end(t, false);
     }
     
     public static void end(Transaction t, boolean isCommited) {
+    	if (t == null || !transactionList.containsKey(t.getName())) {
+    		return;
+    	}
     	if (isCommited) {
     		t.realizeLocks();
     	}
     	t.nullifyLocks();
-    	t.realizeWaits();
+//    	t.realizeWaits();
     	transactionList.remove(t.getName());
     }
     
@@ -435,6 +479,7 @@ public class Database {
     		
     		line = line.replaceAll("\\s", "");
     		
+//    		checkForConflict(line);
     		
     		if (line.contains(";")) {
     			String[] opArray = line.split(";");
@@ -451,9 +496,7 @@ public class Database {
     		} else if (line.contains("W(")) {
     			callWrite(line);
     		} else if (line.startsWith("end(")) {
-    			if (transactionList.containsKey(findTID(line))) {
-    				end(transactionList.get(findTID(line)), true);
-    			}	
+    			end(transactionList.get(findTID(line)), true);	
     		} else if (line.contains("fail(")) {
     			fail(findSiteID(line));
     		} else if (line.contains("recover(")) {
