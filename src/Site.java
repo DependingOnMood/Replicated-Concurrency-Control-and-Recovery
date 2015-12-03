@@ -5,8 +5,8 @@ import java.util.List;
 public class Site {
 	int index;
 	boolean isFailing;
-	HashMap<String, Variable> variableList;
-	List<Lock> lockTable;
+	HashMap<String, Variable> variableList;            //stores the variables on the site
+	List<Lock> lockTable;                              //stores all the locks on the variables of this site
 
 	public Site(int index) {
 		this.index = index;
@@ -25,9 +25,11 @@ public class Site {
 
 	public void fail() {
 		isFailing = true;
-		for (Lock lock : lockTable) {
+		System.out.println("Site " + index + " failed");
+		for (Lock lock : lockTable) {                          //when a site fails, mark all the locks on this site as inactive before erasing the lock table, 
+			                                                   //so that other objects will know the lock has been released
 			lock.changeActive(false);
-			Action.abort(Action.getTransactionList().get(
+			Action.abort(Action.getTransactionList().get(      //abort all the transaction which hold locks on this site
 					lock.transaction().getName()));
 		}
 		lockTable.clear();
@@ -35,7 +37,8 @@ public class Site {
 
 	public void recover() {
 		isFailing = false;
-		for (Variable v : variableList.values()) {
+		System.out.println("Site " + index + " recovered");
+		for (Variable v : variableList.values()) {             //if the variable is not replicated, mark ready_for_read as true, otherwise, mark it false
 			if (Action.isUnique(v.getName())) {
 				v.changeReadReady(true);
 			} else {

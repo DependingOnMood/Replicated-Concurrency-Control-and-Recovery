@@ -6,19 +6,15 @@ public class Transaction {
 	String name;
 	boolean isReadOnly;
 	int time;
-	// the locks the transaction is currently holding
-	List<Lock> lockTable;
-	// the locks which other transaction wants to get
-	// List<Lock> waitList;
-	HashMap<String, Integer[]> readOnly;
+	List<Lock> lockTable;                              //the locks the transaction is currently holding
+	HashMap<String, Integer[]> readOnly;               //if it's read-only type, stores all the 'caches'
 
 	public Transaction(String name, int time, boolean b) {
 		this.name = name;
 		this.isReadOnly = b;
 		this.time = time;
 		lockTable = new ArrayList<Lock>();
-		// waitList = new ArrayList<Lock>();
-		if (isReadOnly) {
+		if (isReadOnly) {                              //get the values of the variables at this particular point, according to multiversion concurrency control
 			readOnly = new HashMap<String, Integer[]>();
 			for (int i = 1; i <= 20; i++) {
 				StringBuilder temp = new StringBuilder();
@@ -58,31 +54,19 @@ public class Transaction {
 		return time;
 	}
 
-	// public void addWait(Lock lock) {
-	// waitList.add(lock);
-	// }
-	public void realizeLocks() {
+	public void realizeLocks() {                              //when a site commits, perform write operation if there's any
 		for (Lock lock : lockTable) {
 			if (lock.isActive() && lock.type().equals("Write")) {
 				lock.getVariable().changeValue(lock.getValue());
-				lock.getVariable().changeReadReady(true);
-				// System.out.println(lock.getVariable().getName() + " " +
-				// lock.getValue());
+				lock.getVariable().changeReadReady(true);     //mark all the variables as ready_for_read
 			}
 		}
 	}
 
-	public void nullifyLocks() {
+	public void nullifyLocks() {                              //when a site ends (whether commit or abort), release all the locks by marking them as inactive
 		for (Lock lock : lockTable) {
 			lock.changeActive(false);
 			lock.getVariable().update();
 		}
 	}
-	// public void realizeWaits() {
-	// for (Lock lock: waitList) {
-	// if (transactionList.containsKey(lock.transaction().getName())) {
-	// lock.changeActive(true);
-	// }
-	// }
-	// }
 }

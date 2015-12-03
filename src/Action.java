@@ -1,9 +1,9 @@
 import java.util.*;
 
-public class Action {
+public class Action {      //transaction manager
 
-	static HashMap<String, Transaction> transactionList;
-	static Site[] sites;
+	static HashMap<String, Transaction> transactionList;     //active transactions
+	static Site[] sites;                                     //ten sites
 
 	public static HashMap<String, Transaction> getTransactionList() {
 		return transactionList;
@@ -21,7 +21,7 @@ public class Action {
 		transactionList = new HashMap<String, Transaction>();
 		sites = new Site[10];
 		for (int i = 0; i < 10; i++) {
-			sites[i] = new Site(i + 1);
+			sites[i] = new Site(i + 1);                         //stores available copies to each site
 			for (int j = 1; j <= 20; j++) {
 				StringBuilder temp = new StringBuilder();
 				temp.append("x");
@@ -37,7 +37,7 @@ public class Action {
 		}
 	}
 
-	public static boolean isUnique(String name) {
+	public static boolean isUnique(String name) {                 //determine whether a variable is replicated
 		int index = Integer.parseInt(name.substring(1, name.length()));
 		if (index % 2 == 0) {
 			return false;
@@ -46,55 +46,42 @@ public class Action {
 		}
 	}
 
-	public static void begin(String name, int time, boolean isReadOnly) {
+	public static void begin(String name, int time, boolean isReadOnly) {             //to instantiate a new transaction
 		transactionList.put(name, new Transaction(name, time, isReadOnly));
 	}
 
-	public static void read(String tName, String vName) {
+	public static void read(String tName, String vName) {                             //perform read operation
 		Transaction t = transactionList.get(tName);
 		if (t == null) {
 			return;
 		}
-		if (t.isReadOnly) {
+		if (t.isReadOnly) {                              //if the transaction is read-only type, simply retrieve and return the 'cache' it stores
 			if (t.containsReadOnly(vName)) {
-				System.out.print("Read ");
+				System.out.print("Read by " + t.getName() + ", ");
 				Integer[] array = t.getReadOnly(vName);
 				print(vName, array[1], array[0]);
 			} else {
-				abort(t);
+				abort(t);             
 			}
-			// int i = 0;
-			// for (; i < sites.length; i++) {
-			// if (!sites[i].isFailing && sites[i].containsVariable(vName)) {
-			// Variable v = sites[i].getVariable(vName);
-			// if (v.isReadyForRead()) {
-			// System.out.print("Read ");
-			// print(v.getName(), i + 1, v.getValue());
-			// break;
-			// }
-			// }
-			// }
-			// if (i == sites.length) {
-			// abort(t);
-			// }
 		} else {
 			int i = 0;
 			for (; i < sites.length; i++) {
-				if (!sites[i].isFailing && sites[i].containsVariable(vName)) {
-					Variable v = sites[i].getVariable(vName);
-					if (v.isReadyForRead() && !v.hasWriteLock()) {
-						Lock lock = new Lock(t, v, sites[i], "Read", 0, true);
+				if (!sites[i].isFailing && sites[i].containsVariable(vName)) {      //if not read-only type, get the first working site which contains that variable
+					Variable v = sites[i].getVariable(vName);                    
+					if (v.isReadyForRead() && !v.hasWriteLock()) {                  //need to check if the variable is ready for read, and make sure it does not have a write lock on it
+						Lock lock = new Lock(t, v, sites[i], "Read", 0, true);      //get a new lock and put it inside the lock list of that variable
 						v.placeLock(lock);
 						sites[i].placeLock(lock);
 						t.placeLock(lock);
-						System.out.print("Read ");
+						System.out.print("Read by " + t.getName() + ", ");          //print out the read value
 						print(v.getName(), i + 1, v.getValue());
 						break;
-					} else if (v.isReadyForRead()) {
+					} else if (v.isReadyForRead()) {                                //if the variable has a write lock 
 						List<Lock> lockList = v.getLockList();
-						if (lockList.get(0).transaction().getTime() > t
-								.getTime() && v.canWait(t)) {
-							Lock lock = new Lock(t, v, sites[i], "Read", 0,
+						if (lockList.get(0).transaction().getTime() > t             //check if the current transaction should wait for the transaction holding the write lock
+								.getTime() && v.canWait(t)) {                       //also check if all the transactions in the wait list of that variable are younger than the current transaction,
+							              											//because otherwise, there is no need to wait
+							Lock lock = new Lock(t, v, sites[i], "Read", 0,         //if decide to wait, put the lock (which represents an operation to be performed later) to the wait list
 									true);
 							v.wait(lock);
 							sites[i].placeLock(lock);
@@ -106,7 +93,7 @@ public class Action {
 					}
 				}
 			}
-			if (i == sites.length) {
+			if (i == sites.length) {                                                 //does not find a working site containing the variable, abort 
 				abort(t);
 			}
 		}
@@ -120,16 +107,16 @@ public class Action {
 		int i = 0;
 		boolean shouldAbort = true;
 		for (; i < sites.length; i++) {
-			if (!sites[i].isFailing && sites[i].containsVariable(vName)) {
+			if (!sites[i].isFailing && sites[i].containsVariable(vName)) {           //need to check if the variable is ready for read, and make sure it does not have any lock on it          
 				Variable v = sites[i].getVariable(vName);
 				if (!v.hasLock()) {
-					Lock lock = new Lock(t, v, sites[i], "Write", value, true);
+					Lock lock = new Lock(t, v, sites[i], "Write", value, true);      //if it does not have lock, get a new lock
 					v.placeLock(lock);
 					sites[i].placeLock(lock);
 					t.placeLock(lock);
 					shouldAbort = false;
 				} else {
-					List<Lock> lockList = v.getLockList();
+					List<Lock> lockList = v.getLockList();                            //if it already has a lock, decide if it should wait
 					for (Lock lock : lockList) {
 						if (lock.isActive()
 								&& lock.transaction().getTime() < t.getTime()) {
@@ -141,7 +128,7 @@ public class Action {
 						abort(t);
 						break;
 					}
-					Lock lock = new Lock(t, v, sites[i], "Write", value, true);
+					Lock lock = new Lock(t, v, sites[i], "Write", value, true);        //if decide to wait, get a new lock and put it in the wait list 
 					v.wait(lock);
 					sites[i].placeLock(lock);
 					t.placeLock(lock);
@@ -155,19 +142,23 @@ public class Action {
 	}
 
 	public static void abort(Transaction t) {
-		// System.out.println(t.getName() + " abort");
 		end(t, false);
 	}
 
-	public static void end(Transaction t, boolean isCommited) {
+	public static void end(Transaction t, boolean isCommited) {                         //value of isCommited represent if it's commit or abort
 		if (t == null || !transactionList.containsKey(t.getName())) {
 			return;
 		}
 		if (isCommited) {
-			t.realizeLocks();
+			System.out.println(t.getName() + " committed");
+		}
+		else {
+			System.out.println(t.getName() + " aborted");
+		}
+		if (isCommited) {                                                                //difference between commit and abort is that if all the locks should be 'realized', or simply discarded
+			t.realizeLocks();                    
 		}
 		t.nullifyLocks();
-		// t.realizeWaits();
 		transactionList.remove(t.getName());
 	}
 
@@ -184,6 +175,7 @@ public class Action {
 	public static void dump() {
 		for (int i = 0; i < sites.length; i++) {
 			sites[i].printSite();
+			System.out.println();
 		}
 	}
 
@@ -194,9 +186,22 @@ public class Action {
 	}
 
 	public static void main(String[] args) {
+//		for (int i = 1; i <= 12; i++) {                                                     //for testing purpose
+//			initialize();
+//			Parser parser = new Parser();
+//			StringBuilder temp = new StringBuilder();
+//			temp.append("input");
+//			temp.append(i);
+//			temp.append(".txt");
+//			String fileName = temp.toString();
+//			System.out.println("******Output " + i + "******");
+//			System.out.println();
+//			parser.parseFile(fileName);
+//		    System.out.println();
+//		}
 		initialize();
-		Parser parser = new Parser();
-		String fileName = "commands.txt";
+    	Parser parser = new Parser();
+    	String fileName = "commands.txt";
 		parser.parseFile(fileName);
 	}
 
