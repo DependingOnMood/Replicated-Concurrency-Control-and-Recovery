@@ -167,7 +167,7 @@ public class Action {
 						// because otherwise, there is no need to wait
 						// if decide to wait, put the lock (which represents an
 						// operation to be performed later) to the wait list
-						if (lockList.get(0).transaction().getTime() > t
+						if (lockList.get(0).getTransaction().getTime() > t
 								.getTime() && v.canWait(t)) {
 
 							Lock lock = new Lock(t, v, sites[i], "Read", 0,
@@ -235,7 +235,7 @@ public class Action {
 
 					for (Lock lock : lockList) {
 						if (lock.isActive()
-								&& lock.transaction().getTime() < t.getTime()) {
+								&& lock.getTransaction().getTime() < t.getTime()) {
 							abort(t);
 							break;
 						}

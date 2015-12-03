@@ -56,7 +56,7 @@ public class Transaction {
 
 	public void realizeLocks() {                              //when a site commits, perform write operation if there's any
 		for (Lock lock : lockTable) {
-			if (lock.isActive() && lock.type().equals("Write")) {
+			if (lock.isActive() && lock.getType().equals("Write")) {
 				lock.getVariable().changeValue(lock.getValue());
 				lock.getVariable().changeReadReady(true);     //mark all the variables as ready_for_read
 			}

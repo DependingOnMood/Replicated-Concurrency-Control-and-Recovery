@@ -30,7 +30,7 @@ public class Site {
 			                                                   //so that other objects will know the lock has been released
 			lock.changeActive(false);
 			Action.abort(Action.getTransactionList().get(      //abort all the transaction which hold locks on this site
-					lock.transaction().getName()));
+					lock.getTransaction().getName()));
 		}
 		lockTable.clear();
 	}

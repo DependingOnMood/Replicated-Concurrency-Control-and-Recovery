@@ -38,7 +38,7 @@ public class Variable {
 
 	public boolean hasWriteLock() {              //when a transaction wants to read, it needs to examine if there is write lock on this variable
 		cleanLock();                             //before examination, make sure all the locks in the lock list are active (remove the locks which have been released due to the end of a transaction or the failure of a site)
-		if (hasLock() && lockList.get(0).type().equals("Write")) {          //if there's a write lock, it must be the first and only lock in the lock list
+		if (hasLock() && lockList.get(0).getType().equals("Write")) {          //if there's a write lock, it must be the first and only lock in the lock list
 			return true;
 		}
 		else {
@@ -88,7 +88,7 @@ public class Variable {
 	public boolean canWait(Transaction t) {               //for efficiency, there is no need to add a lock to the wait list if there exists an older transaction, so the time stamps of the transactions in the wait list should be in strict decreasing order 
 		cleanWait();
 		return waitList.isEmpty()
-				|| waitList.get(waitList.size() - 1).transaction().getTime() > t
+				|| waitList.get(waitList.size() - 1).getTransaction().getTime() > t
 						.getTime();
 	}
 
@@ -100,16 +100,16 @@ public class Variable {
 		cleanLock();
 		cleanWait();
 		if (lockList.size() == 0 && waitList.size() > 0) {
-			if (waitList.get(0).type().equals("Write")) {
+			if (waitList.get(0).getType().equals("Write")) {
 				lockList.add(waitList.get(0));
 				waitList.remove(0);
 			}
 			else {
-				while (waitList.size() > 0 && waitList.get(0).type().equals("Read")) {
+				while (waitList.size() > 0 && waitList.get(0).getType().equals("Read")) {
 					Lock lock = waitList.get(0);
 					lockList.add(lock);
 					waitList.remove(0);
-					System.out.print("Read by " + lock.transaction().getName() + ", ");
+					System.out.print("Read by " + lock.getTransaction().getName() + ", ");
 					Action.print(lock.getVariable().getName(), lock.getSite().siteIndex(), lock.getVariable().getValue());
 				}
 			}
