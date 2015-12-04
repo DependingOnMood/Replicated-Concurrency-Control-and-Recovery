@@ -36,10 +36,12 @@ public class Transaction {
 			readOnly = new HashMap<String, Integer[]>();
 			for (int i = 1; i <= 20; i++) {
 				StringBuilder temp = new StringBuilder();
+				
 				temp.append('x');
 				temp.append(i);
 				String vName = temp.toString();
 				Site[] sites = Action.getSites();
+				
 				for (int j = 0; j < sites.length; j++) {
 					if (!sites[j].isFailing()
 							&& sites[j].containsVariable(vName)) {
@@ -54,6 +56,7 @@ public class Transaction {
 
 	/**
 	 * check if contains Read Only
+	 * 
 	 * @param vName
 	 * @return boolean if contains Read Only
 	 */
@@ -99,6 +102,8 @@ public class Transaction {
 	}
 
 	/**
+	 * realizeLocks
+	 * 
 	 * when a site commits, perform write operation if there's any
 	 */
 	public void realizeLocks() {
@@ -115,6 +120,8 @@ public class Transaction {
 	}
 
 	/**
+	 * nullifyLocks
+	 * 
 	 * when a site ends (whether commit or abort),
 	 * release all the locks by marking them as inactive
 	 */

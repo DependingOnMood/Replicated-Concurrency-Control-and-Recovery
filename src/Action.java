@@ -141,7 +141,7 @@ public class Action {
 					// need to check if the variable is ready for read,
 					// and make sure it does not have a write lock on it
 					if (v.isReadyForRead() && !v.hasWriteLock()) {
-						
+
 						// get a new lock and put it inside the lock list of
 						// that variable
 						Lock lock = new Lock(t, v, sites[i], "Read", 0, true);
@@ -221,7 +221,7 @@ public class Action {
 
 				Variable v = sites[i].getVariable(vName);
 				if (!v.hasLock()) {
-					
+
 					// if it does not have lock, get a new lock
 					Lock lock = new Lock(t, v, sites[i], "Write", value, true);
 
@@ -236,7 +236,8 @@ public class Action {
 
 					for (Lock lock : lockList) {
 						if (lock.isActive()
-								&& lock.getTransaction().getTime() < t.getTime()) {
+								&& lock.getTransaction().getTime() < t
+										.getTime()) {
 							abort(t);
 							break;
 						}
@@ -294,8 +295,7 @@ public class Action {
 		}
 
 		// difference between commit and abort is that if all the locks should
-		// be 'realized',
-		// or simply discarded
+		// be 'realized', or simply discarded
 		if (isCommited) {
 			t.realizeLocks();
 		}
@@ -351,24 +351,24 @@ public class Action {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		 //for testing purpose
-//		 for (int i = 1; i <= 12; i++) {
-//			initialize();
-//			
-//			Parser parser = new Parser();
-//			StringBuilder temp = new StringBuilder();
-//			
-//			temp.append("input");
-//			temp.append(i);
-//			temp.append(".txt");
-//			
-//			String fileName = temp.toString();
-//			
-//			System.out.println("******Output " + i + "******");
-//			System.out.println();
-//			parser.parseFile(fileName);
-//			System.out.println();
-//		}
+		// for testing purpose
+		// for (int i = 1; i <= 12; i++) {
+		// initialize();
+		//
+		// Parser parser = new Parser();
+		// StringBuilder temp = new StringBuilder();
+		//
+		// temp.append("input");
+		// temp.append(i);
+		// temp.append(".txt");
+		//
+		// String fileName = temp.toString();
+		//
+		// System.out.println("******Output " + i + "******");
+		// System.out.println();
+		// parser.parseFile(fileName);
+		// System.out.println();
+		// }
 
 		initialize();
 		Parser parser = new Parser();

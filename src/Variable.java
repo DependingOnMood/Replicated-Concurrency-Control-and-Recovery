@@ -75,6 +75,8 @@ public class Variable {
 	}
 
 	/**
+	 * if the variable has write lock
+	 * 
 	 * when a transaction wants to read, it needs to examine if there is write
 	 * lock on this variable before examination, make sure all the locks in the
 	 * lock list are active (remove the locks which have been released due to

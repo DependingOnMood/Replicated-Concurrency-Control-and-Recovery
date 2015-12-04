@@ -25,7 +25,7 @@ public class Parser {
 	 * main parse file function, parse the file into lines
 	 * 
 	 * @param fileName
-	 * @return
+	 * @return boolean if parse success
 	 */
 	public boolean parseFile(String fileName) {
 
@@ -63,7 +63,7 @@ public class Parser {
 	 * 
 	 * @param line
 	 * @param shouldAddTime
-	 * @return
+	 * @return boolean if parse success
 	 */
 	private boolean parseLine(String line, boolean shouldAddTime) {
 
@@ -118,8 +118,8 @@ public class Parser {
 	/**
 	 * find the Transaction ID in an input command
 	 * 
-	 * @param s
-	 * @return
+	 * @param string
+	 * @return TID
 	 */
 	private String findTID(String s) {
 		int firstP = s.indexOf("(");
@@ -131,8 +131,8 @@ public class Parser {
 	/**
 	 * find the X Position ID in an input command
 	 * 
-	 * @param s
-	 * @return
+	 * @param string
+	 * @return x position ID
 	 */
 	private String findXID(String s) {
 		int firstP = s.indexOf("(");
@@ -144,8 +144,8 @@ public class Parser {
 	/**
 	 * find the Site ID in an input command
 	 * 
-	 * @param s
-	 * @return
+	 * @param string
+	 * @return site ID
 	 */
 	private int findSiteID(String s) {
 		int firstP = s.indexOf("(");
@@ -160,7 +160,7 @@ public class Parser {
 	 * find the variables in a read command, and call read function in Action
 	 * class
 	 * 
-	 * @param s
+	 * @param string
 	 */
 	public void callRead(String s) {
 		int firstP = s.indexOf("(");
@@ -177,7 +177,7 @@ public class Parser {
 	 * find the variables in a write command, and call write function in Action
 	 * class
 	 * 
-	 * @param s
+	 * @param string
 	 */
 	public void callWrite(String s) {
 		int firstP = s.indexOf("(");
