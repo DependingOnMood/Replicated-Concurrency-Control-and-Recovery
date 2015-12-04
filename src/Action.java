@@ -5,7 +5,8 @@ import java.util.List;
  * The Action class is use as a Transaction Manager, it has the main methods
  * needed to control transactions in the database.
  * 
- * @author Dongbo
+ * @author Dongbo Xiao
+ * @author Wenzhao Zang
  *
  */
 public class Action {

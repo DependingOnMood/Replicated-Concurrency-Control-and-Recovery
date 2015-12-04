@@ -4,7 +4,8 @@
  * yet, in latter case, it serves as a container storing the information which
  * will be used later
  * 
- * @author Wenzhao
+ * @author Dongbo Xiao
+ * @author Wenzhao Zang
  *
  */
 public class Lock {

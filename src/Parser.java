@@ -5,7 +5,8 @@ import java.io.FileReader;
  * The Parser class read and parse the commands from the commands file, call the
  * needed functions in other class for processing
  * 
- * @author Dongbo
+ * @author Dongbo Xiao
+ * @author Wenzhao Zang
  *
  */
 public class Parser {
