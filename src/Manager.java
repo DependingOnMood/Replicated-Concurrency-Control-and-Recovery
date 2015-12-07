@@ -2,14 +2,14 @@ import java.util.HashMap;
 import java.util.List;
 
 /**
- * The Action class is use as a Transaction Manager, it has the main methods
+ * The Manager class is use as a Transaction Manager, it has the main methods
  * needed to control transactions in the database.
  * 
  * @author Dongbo Xiao
  * @author Wenzhao Zang
  *
  */
-public class Action {
+public class Manager {
 
 	static HashMap<String, Transaction> transactionList; // active transactions
 	static Site[] sites; // ten sites
@@ -157,10 +157,9 @@ public class Action {
 
 						// if the variable has a write lock
 					} else if (v.isReadyForRead()) {
-
-						List<Lock> lockList = v.getLockList();
-
-						// check if the current transaction should wait for the
+                        // first check if the transaction holding the lock is the same with the current transaction,
+						// if so, print out the value of that write lock even if the transaction has not committed
+						// if not, then check if the current transaction should wait for the
 						// transaction holding the write lock
 						// also check if all the transactions in the wait list
 						// of that variable are younger than the current
@@ -168,7 +167,17 @@ public class Action {
 						// because otherwise, there is no need to wait
 						// if decide to wait, put the lock (which represents an
 						// operation to be performed later) to the wait list
-						if (lockList.get(0).getTransaction().getTime() > t
+						if (v.getWriteLock().getTransaction().getName().equals(t.getName())) {
+							Lock lock = new Lock(t, v, sites[i], "Read", 0,
+									true);
+
+							v.placeLock(lock);
+							sites[i].placeLock(lock);
+							t.placeLock(lock);
+							System.out.print("Read by " + t.getName() + ", ");
+							print(v.getName(), v.getWriteLock().getSite().siteIndex(), v.getWriteLock().getValue());
+						}
+					    else if (v.getWriteLock().getTransaction().getTime() > t
 								.getTime() && v.canWait(t)) {
 
 							Lock lock = new Lock(t, v, sites[i], "Read", 0,
@@ -190,7 +199,21 @@ public class Action {
 
 			// does not find a working site containing the variable, abort
 			if (i == sites.length) {
-				abort(t);
+				if (isUnique(vName)) {
+					for (int pos = 0; pos < sites.length; pos++) {
+						if (sites[pos].containsVariable(vName) && sites[pos].isFailing()) {
+							Lock lock = new Lock(t, sites[pos].getVariable(vName), sites[pos], "Read", 0,
+									true); 
+							sites[pos].placeLock(lock);
+							t.placeLock(lock);
+							sites[pos].getVariable(vName).placeLock(lock);
+							break;
+						} 
+					}
+				}
+				else {
+					abort(t);
+				}			
 			}
 		}
 	}
@@ -216,7 +239,7 @@ public class Action {
 		for (; i < sites.length; i++) {
 
 			// need to check if the variable is ready for read,
-			// and make sure it does not have any lock on it
+			// and make sure it does not have any lock on it (except for the lock held by itself)
 			if (!sites[i].isFailing && sites[i].containsVariable(vName)) {
 
 				Variable v = sites[i].getVariable(vName);
@@ -230,29 +253,38 @@ public class Action {
 					t.placeLock(lock);
 					shouldAbort = false;
 				} else {
-
-					// if it already has a lock, decide if it should wait
 					List<Lock> lockList = v.getLockList();
-
-					for (Lock lock : lockList) {
-						if (lock.isActive()
-								&& lock.getTransaction().getTime() < t
-										.getTime()) {
+					// if it already has a lock, first check if it is itself holding the lock
+					int pos = 0;
+					for (; pos < lockList.size(); pos++) {
+						if (!lockList.get(pos).getTransaction().getName().equals(t.getName())) {
+							break;
+						}
+					}
+					// if it's not itself, decide if it should wait
+					if (pos != lockList.size()) {
+						for (Lock lock : lockList) {
+							if (lock.getTransaction().getTime() < t
+											.getTime()) {
+								abort(t);
+								break;
+							}
+						}
+						if (!v.canWait(t)) {
 							abort(t);
 							break;
 						}
 					}
-
-					if (!v.canWait(t)) {
-						abort(t);
-						break;
-					}
-
-					// if decide to wait,
-					// get a new lock and put it in the wait list
+					
+					// if it's only itself or it decides to wait,
+					// get a new lock and put it in the lock list or wait list
 					Lock lock = new Lock(t, v, sites[i], "Write", value, true);
-					v.wait(lock);
-
+					if (pos == lockList.size()) {
+					    v.placeLock(lock);
+					}
+					else {
+						v.wait(lock);	
+					}
 					sites[i].placeLock(lock);
 					t.placeLock(lock);
 					shouldAbort = false;
@@ -261,7 +293,21 @@ public class Action {
 		}
 
 		if (shouldAbort) {
-			abort(t);
+			if (isUnique(vName)) {
+				for (int pos = 0; pos < sites.length; pos++) {
+					if (sites[pos].containsVariable(vName) && sites[pos].isFailing()) {
+						Lock lock = new Lock(t, sites[pos].getVariable(vName), sites[pos], "Write", value,
+								true); 
+						sites[pos].placeLock(lock);
+						t.placeLock(lock);
+						sites[pos].getVariable(vName).placeLock(lock);
+						break;
+					} 
+				}
+			}
+			else {
+				abort(t);
+			}
 		}
 	}
 
@@ -352,23 +398,23 @@ public class Action {
 	 */
 	public static void main(String[] args) {
 		// for testing purpose
-		// for (int i = 1; i <= 12; i++) {
-		// initialize();
-		//
-		// Parser parser = new Parser();
-		// StringBuilder temp = new StringBuilder();
-		//
-		// temp.append("input");
-		// temp.append(i);
-		// temp.append(".txt");
-		//
-		// String fileName = temp.toString();
-		//
-		// System.out.println("******Output " + i + "******");
-		// System.out.println();
-		// parser.parseFile(fileName);
-		// System.out.println();
-		// }
+//		 for (int i = 1; i <= 12; i++) {
+//		 initialize();
+//		
+//		 Parser parser = new Parser();
+//		 StringBuilder temp = new StringBuilder();
+//		
+//		 temp.append("input");
+//		 temp.append(i);
+//		 temp.append(".txt");
+//		
+//		 String fileName = temp.toString();
+//		
+//		 System.out.println("******Output " + i + "******");
+//		 System.out.println();
+//		 parser.parseFile(fileName);
+//		 System.out.println();
+//		 }
 
 		initialize();
 		Parser parser = new Parser();

@@ -81,10 +81,10 @@ public class Parser {
 			}
 			
 		} else if (line.startsWith("begin(")) {
-			Action.begin(findTID(line), mTime, false);
+			Manager.begin(findTID(line), mTime, false);
 			
 		} else if (line.startsWith("beginRO(")) {
-			Action.begin(findTID(line), mTime, true);
+			Manager.begin(findTID(line), mTime, true);
 			
 		} else if (line.contains("R(")) {
 			callRead(line);
@@ -93,22 +93,22 @@ public class Parser {
 			callWrite(line);
 			
 		} else if (line.startsWith("end(")) {
-			Action.end(Action.getTransactionList().get(findTID(line)), true);
+			Manager.end(Manager.getTransactionList().get(findTID(line)), true);
 			
 		} else if (line.contains("fail(")) {
-			Action.fail(findSiteID(line));
+			Manager.fail(findSiteID(line));
 			
 		} else if (line.contains("recover(")) {
-			Action.recover(findSiteID(line));
+			Manager.recover(findSiteID(line));
 			
 		} else if (line.startsWith("dump()")) {
-			Action.dump();
+			Manager.dump();
 			
 		} else if (line.startsWith("dump(x")) {
-			Action.dumpVariable(findXID(line));
+			Manager.dumpVariable(findXID(line));
 			
 		} else if (line.startsWith("dump(")) {
-			Site[] sites = Action.getSites();
+			Site[] sites = Manager.getSites();
 			sites[findSiteID(line) - 1].printSite();
 		}
 		
@@ -169,7 +169,7 @@ public class Parser {
 		String variablesString = s.substring(firstP + 1, lastP);
 		String[] variables = variablesString.split(",");
 
-		Action.read(variables[0], variables[1]);
+		Manager.read(variables[0], variables[1]);
 
 	}
 
@@ -186,6 +186,6 @@ public class Parser {
 		String variablesString = s.substring(firstP + 1, lastP);
 		String[] variables = variablesString.split(",");
 
-		Action.write(variables[0], variables[1], Integer.parseInt(variables[2]));
+		Manager.write(variables[0], variables[1], Integer.parseInt(variables[2]));
 	}
 }

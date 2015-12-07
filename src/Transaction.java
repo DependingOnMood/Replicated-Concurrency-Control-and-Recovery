@@ -6,7 +6,7 @@ import java.util.List;
  * The transaction class is contains all the functions and variables needed for
  * the transaction for the distributed database, including locks.
  *
- * @author Wenzhao Zhang
+ * @author Wenzhao Zang
  * @author Dongbo Xiao
  *
  */
@@ -40,11 +40,10 @@ public class Transaction {
 				temp.append('x');
 				temp.append(i);
 				String vName = temp.toString();
-				Site[] sites = Action.getSites();
+				Site[] sites = Manager.getSites();
 				
 				for (int j = 0; j < sites.length; j++) {
-					if (!sites[j].isFailing()
-							&& sites[j].containsVariable(vName)) {
+					if (sites[j].containsVariable(vName)) {
 						readOnly.put(vName, new Integer[] {
 								sites[j].getVariable(vName).getValue(), j + 1 });
 						break;

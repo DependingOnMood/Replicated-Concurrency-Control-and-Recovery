@@ -88,13 +88,31 @@ public class Variable {
 
 		cleanLock();
 
-		// if there's a write lock, it must be the first and only lock in the
-		// lock list
-		if (hasLock() && lockList.get(0).getType().equals("Write")) {
-			return true;
-		} else {
-			return false;
-		}
+		// Normally if there's a write lock, it must be the first and only lock in the
+		// lock list. But if one transaction wants to have a read lock and then a write lock on the same 
+		// variable, it might be able to get both at the same time, so the lock list might contain
+		// both write lock and read locks.
+		for (Lock lock: lockList) {
+			if (lock.getType().equals("Write")) {
+				return true;
+			}
+		} 
+		return false;
+	}
+	
+	/**
+	 * if a variable has write lock, return that write lock
+	 * 
+	 * @return the write lock if the variable does have one
+	 */
+	public Lock getWriteLock() {
+		cleanLock();
+		for (Lock lock: lockList) {
+			if (lock.getType().equals("Write")) {
+				return lock;
+			}
+		} 
+		return null;
 	}
 
 	/**
@@ -205,11 +223,14 @@ public class Variable {
 		if (lockList.size() == 0 && waitList.size() > 0) {
 
 			if (waitList.get(0).getType().equals("Write")) {
+				Transaction t = waitList.get(0).getTransaction();
 				lockList.add(waitList.get(0));
 				waitList.remove(0);
-
+				while (waitList.size() > 0 && waitList.get(0).getTransaction().getName().equals(t.getName())) {
+					lockList.add(waitList.get(0));
+					waitList.remove(0);
+				}
 			} else {
-
 				while (waitList.size() > 0
 						&& waitList.get(0).getType().equals("Read")) {
 					Lock lock = waitList.get(0);
@@ -218,7 +239,7 @@ public class Variable {
 
 					System.out.print("Read by "
 							+ lock.getTransaction().getName() + ", ");
-					Action.print(lock.getVariable().getName(), lock.getSite()
+					Manager.print(lock.getVariable().getName(), lock.getSite()
 							.siteIndex(), lock.getVariable().getValue());
 				}
 			}

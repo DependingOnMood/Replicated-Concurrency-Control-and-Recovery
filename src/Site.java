@@ -15,6 +15,7 @@ public class Site {
 	boolean isFailing;
 	HashMap<String, Variable> variableList; // stores the variables on the site
 	List<Lock> lockTable; // stores all the locks on the variables of this site
+	//List<Lock> waitForReadyReadTable; // if necessary, store all the read transactions waiting for the variable to become ready
 
 	/**
 	 * site constructor
@@ -60,7 +61,7 @@ public class Site {
 
 		for (Lock lock : lockTable) {
 			lock.changeActive(false);
-			Action.abort(Action.getTransactionList().get(
+			Manager.abort(Manager.getTransactionList().get(
 					lock.getTransaction().getName()));
 		}
 		lockTable.clear();
@@ -75,12 +76,13 @@ public class Site {
 		// if the variable is not replicated, mark ready_for_read as true,
 		// otherwise, mark it false
 		for (Variable v : variableList.values()) {
-			if (Action.isUnique(v.getName())) {
+			if (Manager.isUnique(v.getName())) {
 				v.changeReadReady(true);
 			} else {
 				v.changeReadReady(false);
 			}
 		}
+		//if (!lockTable.isEmpty())
 	}
 
 	/**
@@ -132,7 +134,7 @@ public class Site {
 			if (variableList.containsKey(temp.toString())) {
 				Variable v = variableList.get(temp.toString());
 				if (v.isReadyForRead()) {
-					Action.print(v.getName(), index, v.getValue());
+					Manager.print(v.getName(), index, v.getValue());
 				}
 			}
 		}
@@ -146,7 +148,7 @@ public class Site {
 	public void printVariable(String vName) {
 		if (variableList.containsKey(vName)) {
 			Variable v = variableList.get(vName);
-			Action.print(v.getName(), index, v.getValue());
+			Manager.print(v.getName(), index, v.getValue());
 		}
 	}
 }
