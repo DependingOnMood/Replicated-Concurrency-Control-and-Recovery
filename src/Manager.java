@@ -390,6 +390,30 @@ public class Manager {
 			sites[i].printVariable(vName);
 		}
 	}
+	
+	/**
+	 * testing 12 files together, for testing purpose
+	 */
+	public static void test12Files(){
+		for (int i = 1; i <= 12; i++) {
+			 initialize();
+			
+			 Parser parser = new Parser();
+			 StringBuilder temp = new StringBuilder();
+			
+			 temp.append("input");
+			 temp.append(i);
+			 temp.append(".txt");
+			
+			 String fileName = temp.toString();
+			
+			 System.out.println("******Output " + i + "******");
+			 System.out.println();
+			 parser.parseFile(fileName);
+			 System.out.println();
+			 }
+		
+	}
 
 	/**
 	 * main execution function
@@ -397,28 +421,13 @@ public class Manager {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// for testing purpose
-//		 for (int i = 1; i <= 12; i++) {
-//		 initialize();
-//		
-//		 Parser parser = new Parser();
-//		 StringBuilder temp = new StringBuilder();
-//		
-//		 temp.append("input");
-//		 temp.append(i);
-//		 temp.append(".txt");
-//		
-//		 String fileName = temp.toString();
-//		
-//		 System.out.println("******Output " + i + "******");
-//		 System.out.println();
-//		 parser.parseFile(fileName);
-//		 System.out.println();
-//		 }
+		
+		//test12Files();
 
 		initialize();
 		Parser parser = new Parser();
-		String fileName = "commands.txt";
+		String fileName = "res/input1.txt";
+		
 		parser.parseFile(fileName);
 	}
 
