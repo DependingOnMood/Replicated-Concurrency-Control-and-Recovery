@@ -416,18 +416,26 @@ public class Manager {
 	}
 
 	/**
-	 * main execution function
+	 * main execution function, default run input1.txt in res folder, run the
+	 * args[0] file in res folder if have input
 	 * 
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		
-		//test12Files();
+
+		// test12Files();
 
 		initialize();
 		Parser parser = new Parser();
 		String fileName = "res/input1.txt";
-		
+
+		if (0 < args.length) {
+			fileName = "res/" + args[0];
+			System.out.println("running file: " + fileName);
+		} else {
+			System.out.println("running default file: " + fileName);
+		}
+
 		parser.parseFile(fileName);
 	}
 
