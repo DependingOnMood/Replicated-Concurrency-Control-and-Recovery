@@ -417,7 +417,7 @@ public class Manager {
 
 	/**
 	 * main execution function, default run input1.txt in res folder, run the
-	 * args[0] file in res folder if have input
+	 * args[0] file with the full path if have input
 	 * 
 	 * @param args
 	 */
@@ -430,7 +430,7 @@ public class Manager {
 		String fileName = "res/input1.txt";
 
 		if (0 < args.length) {
-			fileName = "res/" + args[0];
+			fileName = args[0];
 			System.out.println("running file: " + fileName);
 		} else {
 			System.out.println("running default file: " + fileName);
